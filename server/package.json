@@ -1,0 +1,16 @@
+{
+  "name": "fastgame-server",
+  "version": "1.0.0",
+  "description": "Multiplayer real-time game server for FastGame (Ludo & Chess)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "chess.js": "^1.0.0-beta.9",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
