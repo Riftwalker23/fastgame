@@ -15,13 +15,15 @@
       "backgroundColor": "#0F172A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.riftwalker23.fastgame"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/android-icon-foreground.png"
-      }
+      },
+      "package": "com.riftwalker23.fastgame"
     },
     "web": {
       "bundler": "metro",
