@@ -20,6 +20,7 @@ import Header from './src/components/Header';
 import FriendModal from './src/components/FriendModal';
 import ChallengeModal from './src/components/ChallengeModal';
 import RoomLobbyModal from './src/components/RoomLobbyModal';
+import DownloadModal from './src/components/DownloadModal';
 import LeaderboardModal from './src/screens/LeaderboardModal';
 import ProfileScreen from './src/screens/ProfileScreen';
 
@@ -49,6 +50,7 @@ export default function App() {
   const [friendsModalVisible, setFriendsModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [leaderboardModalVisible, setLeaderboardModalVisible] = useState(false);
+  const [downloadModalVisible, setDownloadModalVisible] = useState(false);
   const [lobbyGameType, setLobbyGameType] = useState('ludo');
   const [roomLobbyVisible, setRoomLobbyVisible] = useState(false);
 
@@ -311,6 +313,7 @@ export default function App() {
           onOpenFriends={() => setFriendsModalVisible(true)}
           onOpenProfile={() => setProfileModalVisible(true)}
           onOpenLeaderboard={() => setLeaderboardModalVisible(true)}
+          onOpenDownload={() => setDownloadModalVisible(true)}
           isMuted={isMuted}
           onToggleMute={handleToggleMute}
         />
@@ -341,6 +344,7 @@ export default function App() {
             onQuickMatch={handleQuickMatch}
             onOpenFriends={() => setFriendsModalVisible(true)}
             onChallengeFriend={handleChallengeFriend}
+            onOpenDownload={() => setDownloadModalVisible(true)}
           />
         )}
 
@@ -414,6 +418,12 @@ export default function App() {
           onClose={() => setProfileModalVisible(false)}
           profile={profile}
           onSaveProfile={handleSaveProfile}
+        />
+
+        {/* Download & Mobile Install Modal */}
+        <DownloadModal
+          visible={downloadModalVisible}
+          onClose={() => setDownloadModalVisible(false)}
         />
       </View>
     </SafeAreaView>

@@ -22,11 +22,30 @@ export default function HomeScreen({
   onQuickMatch,
   onOpenFriends,
   onChallengeFriend,
+  onOpenDownload,
 }) {
   const onlineFriends = friends.filter((f) => f.online);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Mobile Download Announcement Banner */}
+      <TouchableOpacity style={styles.mobileBanner} onPress={onOpenDownload}>
+        <View style={styles.mobileBannerLeft}>
+          <View style={styles.mobileBannerIcon}>
+            <Ionicons name="phone-portrait" size={20} color="#000" />
+          </View>
+          <View>
+            <Text style={styles.mobileBannerTitle}>📱 Play on Mobile (Android & iOS)</Text>
+            <Text style={styles.mobileBannerSub}>
+              Install to Home Screen or download native app in seconds
+            </Text>
+          </View>
+        </View>
+        <View style={styles.mobileBannerBtn}>
+          <Text style={styles.mobileBannerBtnText}>Get App →</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* Hero Welcome Banner */}
       <View style={styles.heroBanner}>
         <View style={styles.heroLeft}>
@@ -231,6 +250,52 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     paddingBottom: 40,
+  },
+  mobileBanner: {
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  mobileBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  mobileBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileBannerTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  mobileBannerSub: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  mobileBannerBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  mobileBannerBtnText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '900',
   },
   heroBanner: {
     backgroundColor: COLORS.card,

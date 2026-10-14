@@ -10,6 +10,7 @@ export default function Header({
   onOpenFriends,
   onOpenProfile,
   onOpenLeaderboard,
+  onOpenDownload,
   isMuted,
   onToggleMute,
 }) {
@@ -40,6 +41,12 @@ export default function Header({
 
       {/* Action Buttons */}
       <View style={styles.actionRow}>
+        {/* Download on Mobile Button */}
+        <TouchableOpacity style={styles.downloadHeaderBtn} onPress={onOpenDownload}>
+          <Ionicons name="phone-portrait" size={15} color="#000" />
+          <Text style={styles.downloadHeaderText}>Mobile</Text>
+        </TouchableOpacity>
+
         {/* Mute Button */}
         <TouchableOpacity style={styles.iconButton} onPress={onToggleMute}>
           <Ionicons
@@ -145,6 +152,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  downloadHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  downloadHeaderText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '900',
   },
   badge: {
     position: 'absolute',
