@@ -6,6 +6,14 @@ const cors = require('cors');
 
 const friendManager = require('./friendManager');
 const RoomManager = require('./roomManager');
+const { TURN_GAMES } = require('./roomManager');
+
+// Socket event used to announce game start / state for a given game type.
+function eventFor(gameType, kind) {
+  if (gameType === 'chess') return `chess:${kind}`;
+  if (gameType === 'ludo') return `ludo:${kind}`;
+  return kind === 'start' ? 'turn:start' : 'turn:sync';
+}
 
 const app = express();
 app.use(cors());
@@ -272,8 +280,7 @@ io.on('connection', (socket) => {
     socket.emit('room:joined', { room: result.room });
 
     if (result.isReconnect && result.room.game) {
-      const eventName = result.room.gameType === 'chess' ? 'chess:update' : 'ludo:update';
-      socket.emit(eventName, result.room.game.getState());
+      socket.emit(eventFor(result.room.gameType, 'update'), result.room.game.getState());
     }
   });
 
@@ -293,8 +300,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const eventName = result.room.gameType === 'chess' ? 'chess:start' : 'ludo:start';
-    io.to(roomId).emit(eventName, result.gameState);
+    io.to(roomId).emit(eventFor(result.room.gameType, 'start'), result.gameState);
     io.to(roomId).emit('room:updated', { room: result.room });
 
     handleBotTurnsIfNeeded(result.room);
@@ -375,6 +381,25 @@ io.on('connection', (socket) => {
     } else {
       handleBotTurnsIfNeeded(room);
     }
+  });
+
+  // Generic turn-based games (Tic Tac Toe, Connect Four, Dots & Boxes).
+  // Rules run on the clients; the server relays each move with the sender's seat
+  // so every client applies the same move sequence.
+  socket.on('turn:move', ({ roomId, playerId, move }) => {
+    const room = roomManager.rooms.get(roomId);
+    if (!room || !room.game || !TURN_GAMES.includes(room.gameType)) return;
+    const entry = room.game.addMove(playerId, move);
+    if (!entry) return;
+    io.to(roomId).emit('turn:move', { roomId, ...entry });
+  });
+
+  socket.on('turn:rematch', ({ roomId }) => {
+    const room = roomManager.rooms.get(roomId);
+    if (!room || !room.game || !TURN_GAMES.includes(room.gameType)) return;
+    room.game.reset();
+    room.status = 'playing';
+    io.to(roomId).emit('turn:start', room.game.getState());
   });
 
   // CHESS Gameplay Events

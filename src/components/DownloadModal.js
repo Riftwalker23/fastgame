@@ -115,7 +115,7 @@ export default function DownloadModal({ visible, onClose }) {
 
                 <View style={styles.guideBlock}>
                   <View style={styles.osHeader}>
-                    <Ionicons name="logo-android" size={18} color="#10B981" />
+                    <Ionicons name="logo-android" size={18} color="#5E9C66" />
                     <Text style={styles.osTitle}>For Android (Chrome):</Text>
                   </View>
                   <View style={styles.stepRow}>
@@ -246,9 +246,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: '#3B3B3B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -306,10 +306,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   highlightCard: {
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: '#262626',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: '#3B3B3B',
     padding: 16,
   },
   highlightBadge: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   codeBox: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#141414',
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,

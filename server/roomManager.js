@@ -13,6 +13,51 @@ function generateRoomCode(prefix = 'GAME') {
   return `${prefix}-${code}`;
 }
 
+// Turn-based games whose rules run on the clients; the server just relays & records moves.
+const TURN_GAMES = ['tictactoe', 'connect4', 'dotsboxes'];
+const ROOM_PREFIX = {
+  chess: 'CHESS',
+  ludo: 'LUDO',
+  tictactoe: 'TTT',
+  connect4: 'C4',
+  dotsboxes: 'DOTS',
+};
+
+class TurnRelayGame {
+  constructor(roomId, gameType, players) {
+    this.roomId = roomId;
+    this.gameType = gameType;
+    this.players = players;
+    this.moves = [];
+  }
+
+  seatOf(playerId) {
+    return this.players.findIndex((p) => p.id === playerId);
+  }
+
+  addMove(playerId, move) {
+    const seat = this.seatOf(playerId);
+    if (seat < 0) return null;
+    if (this.moves.length > 500) return null;
+    const entry = { seat, move };
+    this.moves.push(entry);
+    return entry;
+  }
+
+  reset() {
+    this.moves = [];
+  }
+
+  getState() {
+    return {
+      roomId: this.roomId,
+      gameType: this.gameType,
+      players: this.players,
+      moves: this.moves,
+    };
+  }
+}
+
 class RoomManager {
   constructor(io) {
     this.io = io;
@@ -31,14 +76,14 @@ class RoomManager {
   }
 
   createRoom({ hostUser, gameType, maxPlayers = 2, timeControlMinutes = 10, isPrivate = true }) {
-    const prefix = gameType === 'chess' ? 'CHESS' : 'LUDO';
+    const prefix = ROOM_PREFIX[gameType] || 'GAME';
     const roomId = generateRoomCode(prefix);
 
     const room = {
       id: roomId,
       hostId: hostUser.id,
-      gameType, // 'ludo' or 'chess'
-      maxPlayers: gameType === 'chess' ? 2 : maxPlayers,
+      gameType, // 'ludo' | 'chess' | one of TURN_GAMES
+      maxPlayers: gameType === 'ludo' ? maxPlayers : 2,
       timeControlMinutes,
       isPrivate,
       players: [hostUser],
@@ -126,6 +171,10 @@ class RoomManager {
       });
     } else if (room.gameType === 'ludo') {
       room.game = new LudoGame(roomId, room.players, {});
+    } else if (TURN_GAMES.includes(room.gameType)) {
+      room.game = new TurnRelayGame(roomId, room.gameType, room.players.slice(0, 2));
+    } else {
+      return { success: false, message: 'Unknown game type' };
     }
 
     room.status = 'playing';
@@ -159,17 +208,19 @@ class RoomManager {
 
   // Quick Matchmaking
   queueMatchmaking(player, gameType, maxPlayers = 2) {
-    const queueKey = gameType === 'chess' ? 'chess' : maxPlayers === 4 ? 'ludo4' : 'ludo2';
+    const queueKey =
+      gameType === 'ludo' ? (maxPlayers === 4 ? 'ludo4' : 'ludo2') : gameType;
+    if (!this.matchQueues[queueKey]) this.matchQueues[queueKey] = [];
     const queue = this.matchQueues[queueKey];
 
     // Check if player already in queue
-    if (queue.some((p) => p.player.id === player.id)) {
+    if (queue.some((p) => p.id === player.id)) {
       return { status: 'waiting' };
     }
 
     queue.push(player);
 
-    const needed = gameType === 'chess' ? 2 : maxPlayers;
+    const needed = gameType === 'ludo' ? maxPlayers : 2;
     if (queue.length >= needed) {
       // Create matched room!
       const matchedPlayers = queue.splice(0, needed);
@@ -281,3 +332,4 @@ class RoomManager {
 }
 
 module.exports = RoomManager;
+module.exports.TURN_GAMES = TURN_GAMES;

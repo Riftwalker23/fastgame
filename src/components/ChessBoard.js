@@ -189,11 +189,11 @@ export default function ChessBoard({
                       {
                         width: squareSize,
                         height: squareSize,
-                        backgroundColor: isLight ? '#CBD5E1' : '#475569',
+                        backgroundColor: isLight ? '#E8DFCC' : '#9A8166',
                       },
                       isLastMoveSquare && { backgroundColor: '#A78BFA' },
-                      isSelected && { backgroundColor: '#F59E0B' },
-                      isKingInCheck && { backgroundColor: '#EF4444' },
+                      isSelected && { backgroundColor: '#D9A93A' },
+                      isKingInCheck && { backgroundColor: '#C8553D' },
                     ]}
                     activeOpacity={0.8}
                     onPress={() => handleSquarePress(file, rank, squareKey)}
@@ -203,7 +203,7 @@ export default function ChessBoard({
                       <Text
                         style={[
                           styles.rankLabel,
-                          { color: isLight ? '#64748B' : '#E2E8F0' },
+                          { color: isLight ? '#7A6A55' : '#F2EBDD' },
                         ]}
                       >
                         {rank}
@@ -213,7 +213,7 @@ export default function ChessBoard({
                       <Text
                         style={[
                           styles.fileLabel,
-                          { color: isLight ? '#64748B' : '#E2E8F0' },
+                          { color: isLight ? '#7A6A55' : '#F2EBDD' },
                         ]}
                       >
                         {file}
@@ -227,7 +227,7 @@ export default function ChessBoard({
                           styles.pieceText,
                           {
                             fontSize: squareSize * 0.72,
-                            color: piece.color === 'w' ? '#FFFFFF' : '#111827',
+                            color: piece.color === 'w' ? '#FFFFFF' : '#1A1A1A',
                             textShadowColor:
                               piece.color === 'w' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.4)',
                             textShadowOffset: { width: 1, height: 1 },
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   clockBadgeActive: {
     borderColor: COLORS.primary,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: '#262626',
   },
   clockText: {
     color: COLORS.text,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: COLORS.borderLight,
     overflow: 'hidden',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#141414',
   },
   boardRow: {
     flexDirection: 'row',
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(6, 182, 212, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   captureRing: {
     position: 'absolute',
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   resignBtn: {
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderColor: '#3B3B3B',
   },
   resignText: {
     color: COLORS.danger,

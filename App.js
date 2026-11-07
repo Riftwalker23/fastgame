@@ -6,6 +6,7 @@ import {
   StatusBar as RNStatusBar,
   Platform,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from './src/theme/colors';
@@ -28,6 +29,34 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LudoGameScreen from './src/screens/LudoGameScreen';
 import ChessGameScreen from './src/screens/ChessGameScreen';
+import GameDetailScreen from './src/screens/GameDetailScreen';
+import TurnGameScreen from './src/screens/TurnGameScreen';
+import SnakeGameScreen from './src/screens/SnakeGameScreen';
+import Game2048Screen from './src/screens/Game2048Screen';
+import MemoryGameScreen from './src/screens/MemoryGameScreen';
+import ReactionGameScreen from './src/screens/ReactionGameScreen';
+import HangmanScreen from './src/screens/HangmanScreen';
+import RockPaperScissorsScreen from './src/screens/RockPaperScissorsScreen';
+import MinesweeperScreen from './src/screens/MinesweeperScreen';
+import { getGame, TURN_GAMES } from './src/games/catalog';
+
+const SOLO_SCREENS = {
+  snake: SnakeGameScreen,
+  game2048: Game2048Screen,
+  memory: MemoryGameScreen,
+  reaction: ReactionGameScreen,
+  hangman: HangmanScreen,
+  rps: RockPaperScissorsScreen,
+  minesweeper: MinesweeperScreen,
+};
+
+function notify(title, message) {
+  if (Platform.OS === 'web') {
+    window.alert(message);
+  } else {
+    Alert.alert(title, message);
+  }
+}
 
 export default function App() {
   const [profile, setProfile] = useState(null);
@@ -41,7 +70,9 @@ export default function App() {
   const [incomingChallenge, setIncomingChallenge] = useState(null);
 
   // Navigation & Game State
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' | 'ludo' | 'chess'
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home' | 'detail' | <game id>
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const [friendsChallengeGame, setFriendsChallengeGame] = useState(null);
   const [gameMode, setGameMode] = useState('online'); // 'online' | 'local' | 'bot'
   const [activeRoom, setActiveRoom] = useState(null);
   const [activeGameState, setActiveGameState] = useState(null);
@@ -107,6 +138,7 @@ export default function App() {
         setIncomingChallenge(null);
         setRoomLobbyVisible(false);
         setFriendsModalVisible(false);
+        setSelectedGameId(room.gameType);
         setCurrentScreen(room.gameType);
         setGameMode('online');
       });
@@ -146,10 +178,20 @@ export default function App() {
         setGameMode('online');
       });
 
+      // Generic turn-based games (tic tac toe, connect four, dots & boxes)
+      socketService.on('turn:start', (gameState) => {
+        setActiveGameState(gameState);
+        setRoomLobbyVisible(false);
+        setSelectedGameId(gameState.gameType);
+        setCurrentScreen(gameState.gameType);
+        setGameMode('online');
+      });
+
       socketService.on('matchmaking:found', ({ room, gameState }) => {
         soundService.playVictory();
         setActiveRoom(room);
         setActiveGameState(gameState);
+        setSelectedGameId(room.gameType);
         setCurrentScreen(room.gameType);
         setGameMode('online');
       });
@@ -197,11 +239,10 @@ export default function App() {
       toUserId: friendId,
       gameType,
     });
-    if (Platform.OS === 'web') {
-      window.alert(`Challenge sent for ${gameType === 'ludo' ? 'Ludo' : 'Chess'}! Waiting for friend...`);
-    } else {
-      Alert.alert('Challenge Sent', `Waiting for friend to accept...`);
-    }
+    notify(
+      'Challenge Sent',
+      `${getGame(gameType)?.name || 'Game'} challenge sent! Waiting for your friend to accept...`
+    );
   };
 
   // Challenge Response
@@ -268,11 +309,12 @@ export default function App() {
       gameType,
       maxPlayers: 2,
     });
-    if (Platform.OS === 'web') {
-      window.alert(`Searching for online ${gameType} match...`);
-    } else {
-      Alert.alert('Matchmaking', `Searching for player...`);
-    }
+    notify(
+      'Matchmaking',
+      isConnected
+        ? `Searching for an online ${getGame(gameType)?.name || gameType} opponent...`
+        : 'Not connected to the game server — online play is unavailable right now.'
+    );
   };
 
   // Save profile
@@ -295,8 +337,39 @@ export default function App() {
 
   const handleExitGame = () => {
     handleLeaveRoom();
-    setCurrentScreen('home');
+    setCurrentScreen(selectedGameId ? 'detail' : 'home');
   };
+
+  const openGame = (gameId) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('detail');
+  };
+
+  const playGame = (gameId, mode) => {
+    setActiveGameState(null);
+    setGameMode(mode);
+    setCurrentScreen(gameId);
+  };
+
+  const openFriends = (gameId = null) => {
+    setFriendsChallengeGame(gameId);
+    setFriendsModalVisible(true);
+  };
+
+  // Android hardware back: game -> detail -> home
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (currentScreen === 'home') return false;
+      if (currentScreen === 'detail') setCurrentScreen('home');
+      else handleExitGame();
+      return true;
+    });
+    return () => sub.remove();
+  }, [currentScreen, selectedGameId, activeRoom]);
+
+  const selectedGame = selectedGameId ? getGame(selectedGameId) : null;
+  const SoloScreen = SOLO_SCREENS[currentScreen];
+  const isTurnGame = TURN_GAMES.includes(currentScreen);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -323,30 +396,38 @@ export default function App() {
           <HomeScreen
             profile={profile}
             friends={friends}
-            onOpenLudoLobby={() => handleOpenLobby('ludo')}
-            onOpenChessLobby={() => handleOpenLobby('chess')}
-            onStartLocalLudo={() => {
-              setCurrentScreen('ludo');
-              setGameMode('local');
-            }}
-            onStartBotLudo={() => {
-              setCurrentScreen('ludo');
-              setGameMode('bot');
-            }}
-            onStartLocalChess={() => {
-              setCurrentScreen('chess');
-              setGameMode('local');
-            }}
-            onStartBotChess={() => {
-              setCurrentScreen('chess');
-              setGameMode('bot');
-            }}
-            onQuickMatch={handleQuickMatch}
-            onOpenFriends={() => setFriendsModalVisible(true)}
-            onChallengeFriend={handleChallengeFriend}
+            onSelectGame={openGame}
+            onOpenFriends={() => openFriends(null)}
             onOpenDownload={() => setDownloadModalVisible(true)}
           />
         )}
+
+        {currentScreen === 'detail' && selectedGame && (
+          <GameDetailScreen
+            game={selectedGame}
+            profile={profile}
+            isConnected={isConnected}
+            onBack={() => setCurrentScreen('home')}
+            onPlay={(mode) => playGame(selectedGame.id, mode)}
+            onOpenLobby={() => handleOpenLobby(selectedGame.id)}
+            onQuickMatch={() => handleQuickMatch(selectedGame.id)}
+            onOpenFriends={() => openFriends(selectedGame.id)}
+          />
+        )}
+
+        {isTurnGame && (
+          <TurnGameScreen
+            gameId={currentScreen}
+            mode={gameMode}
+            room={activeRoom}
+            initialGameState={activeGameState}
+            currentUserId={profile?.id}
+            userProfile={profile}
+            onExit={handleExitGame}
+          />
+        )}
+
+        {SoloScreen && <SoloScreen mode={gameMode} onExit={handleExitGame} />}
 
         {currentScreen === 'ludo' && (
           <LudoGameScreen
@@ -383,6 +464,7 @@ export default function App() {
           onRemoveFriend={handleRemoveFriend}
           onChallengeFriend={handleChallengeFriend}
           userProfile={profile}
+          challengeGameId={friendsChallengeGame}
         />
 
         {/* Incoming Challenge Real-Time Modal */}

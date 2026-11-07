@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
+import { getGame } from '../games/catalog';
 
 export default function RoomLobbyModal({
   visible,
@@ -29,6 +30,9 @@ export default function RoomLobbyModal({
   const [errorMsg, setErrorMsg] = useState('');
 
   const isLudo = gameType === 'ludo';
+  const game = getGame(gameType) || { name: 'Game', emoji: '🎮' };
+  // Only Ludo & Chess have server-side bots; other games offer "Vs AI" on their page.
+  const supportsServerBot = gameType === 'ludo' || gameType === 'chess';
   const isHost = room?.hostId === currentUserId;
   const canStart = room && room.players.length >= 2;
 
@@ -56,9 +60,9 @@ export default function RoomLobbyModal({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
-              <Text style={styles.gameBadge}>{isLudo ? '🎲' : '♟️'}</Text>
+              <Text style={styles.gameBadge}>{game.emoji}</Text>
               <Text style={styles.title}>
-                {room ? `Room: ${room.id}` : `${isLudo ? 'Ludo' : 'Chess'} Lobby`}
+                {room ? `Room: ${room.id}` : `${game.name} Lobby`}
               </Text>
             </View>
             <TouchableOpacity
@@ -130,7 +134,7 @@ export default function RoomLobbyModal({
               <View style={styles.joinRow}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter Code (e.g. LUDO-9A2B)"
+                  placeholder="Enter Code (e.g. TTT-9A2B)"
                   placeholderTextColor={COLORS.textMuted}
                   value={roomCodeInput}
                   onChangeText={(val) => setRoomCodeInput(val.toUpperCase())}
@@ -191,7 +195,7 @@ export default function RoomLobbyModal({
 
               {/* Bot Option & Start Button for Host */}
               <View style={styles.lobbyActions}>
-                {isHost && room.players.length < room.maxPlayers && (
+                {isHost && supportsServerBot && room.players.length < room.maxPlayers && (
                   <TouchableOpacity style={styles.addBotBtn} onPress={onAddBot}>
                     <Ionicons name="hardware-chip-outline" size={18} color={COLORS.secondary} />
                     <Text style={styles.addBotText}>+ Add AI Bot to Play Now</Text>
@@ -305,7 +309,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selOptionActive: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: '#262626',
     borderColor: COLORS.primary,
   },
   selOptionText: {
@@ -441,7 +445,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   readyBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: '#262626',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -473,9 +477,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
+    borderColor: '#3B3B3B',
     paddingVertical: 10,
     borderRadius: 12,
   },

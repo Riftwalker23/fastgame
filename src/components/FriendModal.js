@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
+import { GAMES, getGame } from '../games/catalog';
+
+const ONLINE_GAMES = GAMES.filter((g) => g.modes.includes('online'));
 
 export default function FriendModal({
   visible,
@@ -24,8 +27,11 @@ export default function FriendModal({
   onRemoveFriend,
   onChallengeFriend,
   userProfile,
+  challengeGameId, // when opened from a game page, challenge buttons target that game
 }) {
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'requests'
+  const [pickerFor, setPickerFor] = useState(null);
+  const preferredGame = challengeGameId ? getGame(challengeGameId) : null;
   const [searchQuery, setSearchQuery] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
@@ -147,19 +153,23 @@ export default function FriendModal({
 
                     {/* Challenge Buttons */}
                     <View style={styles.friendActions}>
-                      <TouchableOpacity
-                        style={[styles.challengeBtn, styles.ludoBtn]}
-                        onPress={() => onChallengeFriend(item.id, 'ludo')}
-                      >
-                        <Text style={styles.challengeBtnText}>🎲 Ludo</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[styles.challengeBtn, styles.chessBtn]}
-                        onPress={() => onChallengeFriend(item.id, 'chess')}
-                      >
-                        <Text style={styles.challengeBtnText}>♟️ Chess</Text>
-                      </TouchableOpacity>
+                      {preferredGame ? (
+                        <TouchableOpacity
+                          style={[styles.challengeBtn, { backgroundColor: preferredGame.color }]}
+                          onPress={() => onChallengeFriend(item.id, preferredGame.id)}
+                        >
+                          <Text style={[styles.challengeBtnText, { color: '#000' }]}>
+                            {preferredGame.emoji} Challenge
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={[styles.challengeBtn, styles.chessBtn]}
+                          onPress={() => setPickerFor(pickerFor === item.id ? null : item.id)}
+                        >
+                          <Text style={styles.challengeBtnText}>⚔️ Challenge</Text>
+                        </TouchableOpacity>
+                      )}
 
                       <TouchableOpacity
                         style={styles.removeBtn}
@@ -168,6 +178,24 @@ export default function FriendModal({
                         <Ionicons name="trash-outline" size={16} color={COLORS.textMuted} />
                       </TouchableOpacity>
                     </View>
+                    {pickerFor === item.id && !preferredGame && (
+                      <View style={styles.gamePicker}>
+                        {ONLINE_GAMES.map((g) => (
+                          <TouchableOpacity
+                            key={g.id}
+                            style={[styles.gameChip, { borderColor: g.color }]}
+                            onPress={() => {
+                              setPickerFor(null);
+                              onChallengeFriend(item.id, g.id);
+                            }}
+                          >
+                            <Text style={styles.gameChipText}>
+                              {g.emoji} {g.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 )}
               />
@@ -427,8 +455,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     marginBottom: 10,
     gap: 8,
+  },
+  gamePicker: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: 4,
+  },
+  gameChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: COLORS.surface,
+  },
+  gameChipText: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '700',
   },
   friendLeft: {
     flexDirection: 'row',
@@ -473,14 +521,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   ludoBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
+    borderColor: '#3B3B3B',
   },
   chessBtn: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
+    borderColor: '#3B3B3B',
   },
   challengeBtnText: {
     color: COLORS.text,

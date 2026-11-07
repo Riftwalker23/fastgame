@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
+import { getGame } from '../games/catalog';
 
 export default function ChallengeModal({ challenge, onAccept, onDecline }) {
   const [timeLeft, setTimeLeft] = useState(25);
@@ -25,7 +26,7 @@ export default function ChallengeModal({ challenge, onAccept, onDecline }) {
 
   if (!challenge) return null;
 
-  const isLudo = challenge.gameType === 'ludo';
+  const game = getGame(challenge.gameType) || { name: 'Game', emoji: '🎮', color: COLORS.primary };
 
   return (
     <Modal visible={!!challenge} transparent animationType="fade">
@@ -35,10 +36,10 @@ export default function ChallengeModal({ challenge, onAccept, onDecline }) {
           <View
             style={[
               styles.iconCircle,
-              { backgroundColor: isLudo ? 'rgba(239, 68, 68, 0.2)' : 'rgba(6, 182, 212, 0.2)' },
+              { backgroundColor: COLORS.surfaceLight },
             ]}
           >
-            <Text style={styles.gameIcon}>{isLudo ? '🎲' : '♟️'}</Text>
+            <Text style={styles.gameIcon}>{game.emoji}</Text>
           </View>
 
           <Text style={styles.title}>Match Challenge!</Text>
@@ -47,7 +48,7 @@ export default function ChallengeModal({ challenge, onAccept, onDecline }) {
             <Text style={styles.userAvatar}>{challenge.fromUser?.avatar || '🎮'}</Text>
             <Text style={styles.username}>{challenge.fromUser?.username}</Text>
             <Text style={styles.subtext}>
-              has challenged you to a live {isLudo ? 'Ludo' : 'Chess'} match!
+              has challenged you to a live {game.name} match!
             </Text>
           </View>
 
@@ -69,7 +70,7 @@ export default function ChallengeModal({ challenge, onAccept, onDecline }) {
             <TouchableOpacity
               style={[
                 styles.acceptBtn,
-                { backgroundColor: isLudo ? COLORS.ludoRed : COLORS.primary },
+                { backgroundColor: game.color },
               ]}
               onPress={() => onAccept(challenge.id)}
             >

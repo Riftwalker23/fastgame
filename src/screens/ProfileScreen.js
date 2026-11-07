@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   avatarOptionSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    backgroundColor: '#262626',
   },
   avItem: {
     fontSize: 20,

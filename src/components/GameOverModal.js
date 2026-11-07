@@ -11,10 +11,12 @@ export default function GameOverModal({
   currentUserId,
   onPlayAgain,
   onExit,
+  title, // optional override, e.g. "Player 2 Wins!"
+  showRewards = true,
+  emoji,
 }) {
   if (!visible) return null;
 
-  const isLudo = gameType === 'ludo';
   const isWinner = winner && winner.id === currentUserId;
   const isDraw = !winner;
 
@@ -26,16 +28,16 @@ export default function GameOverModal({
           <View
             style={[
               styles.trophyWrap,
-              { backgroundColor: isWinner ? 'rgba(245, 158, 11, 0.2)' : 'rgba(6, 182, 212, 0.2)' },
+              { backgroundColor: isWinner ? '#262626' : '#262626' },
             ]}
           >
             <Text style={styles.trophyEmoji}>
-              {isDraw ? '🤝' : isWinner ? '🏆' : '🎖️'}
+              {emoji || (isDraw ? '🤝' : isWinner ? '🏆' : '🎖️')}
             </Text>
           </View>
 
           <Text style={styles.title}>
-            {isDraw ? 'Game Drawn!' : isWinner ? 'Victory!' : 'Game Over'}
+            {title || (isDraw ? 'Game Drawn!' : isWinner ? 'Victory!' : 'Game Over')}
           </Text>
 
           <Text style={styles.subtitle}>
@@ -57,6 +59,7 @@ export default function GameOverModal({
           )}
 
           {/* XP & Stats */}
+          {showRewards && (
           <View style={styles.rewardRow}>
             <View style={styles.rewardItem}>
               <Text style={styles.rewardVal}>{isWinner ? '+25' : isDraw ? '+10' : '+5'}</Text>
@@ -68,6 +71,7 @@ export default function GameOverModal({
               <Text style={styles.rewardLabel}>Recorded</Text>
             </View>
           </View>
+          )}
 
           {/* Action buttons */}
           <View style={styles.btnRow}>

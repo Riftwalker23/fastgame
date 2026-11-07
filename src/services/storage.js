@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   USER_PROFILE: '@fastgame_user_profile',
   APP_SETTINGS: '@fastgame_settings',
   GAME_STATS: '@fastgame_stats',
+  BEST_SCORES: '@fastgame_best_scores',
 };
 
 const DEFAULT_AVATARS = ['🦁', '🦊', '⚡', '🐉', '🎮', '👑', '🔥', '🚀', '🤖', '🎯', '🦅', '💎'];
@@ -74,12 +75,49 @@ export const StorageService = {
       } else if (gameType === 'ludo') {
         profile.stats.ludoGames += 1;
         if (result === 'win') profile.stats.ludoWins += 1;
+      } else {
+        const games = `${gameType}Games`;
+        const wins = `${gameType}Wins`;
+        profile.stats[games] = (profile.stats[games] || 0) + 1;
+        if (result === 'win') profile.stats[wins] = (profile.stats[wins] || 0) + 1;
       }
 
       await this.saveProfile(profile);
       return profile;
     } catch (e) {
       console.warn('Error updating stats:', e);
+    }
+  },
+
+  // High scores for solo games, keyed like 'snake' or 'reaction'.
+  async getBestScores() {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.BEST_SCORES);
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      return {};
+    }
+  },
+
+  async getBestScore(key) {
+    const all = await this.getBestScores();
+    return all[key] ?? null;
+  },
+
+  // Saves `value` if it beats the stored best. Returns true when it's a new record.
+  async submitScore(key, value, lowerIsBetter = false) {
+    try {
+      const all = await this.getBestScores();
+      const prev = all[key];
+      const better =
+        prev === undefined || prev === null || (lowerIsBetter ? value < prev : value > prev);
+      if (better) {
+        all[key] = value;
+        await AsyncStorage.setItem(STORAGE_KEYS.BEST_SCORES, JSON.stringify(all));
+      }
+      return better;
+    } catch (e) {
+      return false;
     }
   },
 

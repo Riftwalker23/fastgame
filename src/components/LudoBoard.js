@@ -555,15 +555,15 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#141414',
   },
   actionNote: {
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: '#262626',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.25)',
+    borderColor: '#3B3B3B',
   },
   actionNoteText: {
     color: COLORS.primary,
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   yardInner: {
     width: '80%',
     height: '80%',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#141414',
     borderRadius: 12,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   },
   centerGoal: {
     position: 'absolute',
-    backgroundColor: '#1E293B',
+    backgroundColor: '#262626',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -656,6 +656,6 @@ const styles = StyleSheet.create({
   legalPulse: {
     borderColor: COLORS.accent,
     borderWidth: 2,
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#D9A93A',
   },
 });

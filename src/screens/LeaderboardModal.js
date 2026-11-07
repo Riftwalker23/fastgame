@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   firstRank: {
-    borderColor: 'rgba(245, 158, 11, 0.6)',
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: '#3B3B3B',
+    backgroundColor: '#262626',
   },
   secondRank: {
     borderColor: 'rgba(203, 213, 225, 0.5)',

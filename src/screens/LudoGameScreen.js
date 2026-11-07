@@ -115,6 +115,7 @@ export default function LudoGameScreen({
 
     // Local Roll Logic
     if (!gameState || gameState.diceRolled) return;
+    if (mode === 'bot' && gameState.currentPlayer?.isBot) return;
     const dice = Math.floor(Math.random() * 6) + 1;
     const currentColor = gameState.currentColor;
     const tokens = gameState.tokens[currentColor];
@@ -154,11 +155,6 @@ export default function LudoGameScreen({
     };
 
     setGameState(newState);
-
-    // If bot turn next and passed
-    if (isTurnPassed && mode === 'bot' && newState.currentPlayer.isBot) {
-      setTimeout(runBotLocalTurn, 1000);
-    }
   };
 
   const handleMoveToken = (tokenIndex) => {
@@ -173,6 +169,7 @@ export default function LudoGameScreen({
 
     // Local Move Logic
     if (!gameState || !gameState.diceRolled) return;
+    if (mode === 'bot' && gameState.currentPlayer?.isBot) return;
     const move = gameState.legalMoves.find((m) => m.tokenIndex === tokenIndex);
     if (!move) return;
 
@@ -215,79 +212,103 @@ export default function LudoGameScreen({
     };
 
     setGameState(newState);
-
-    // If next is bot
-    if (mode === 'bot' && newState.currentPlayer.isBot) {
-      setTimeout(runBotLocalTurn, 1000);
-    }
   };
 
-  // Local Bot Execution
-  const runBotLocalTurn = () => {
-    // Bot rolls
+  // Local Bot Driver: whenever it's the bot's turn (including extra rolls
+  // after a 6 or reaching home), schedule its next roll or move.
+  useEffect(() => {
+    if (mode !== 'bot' || !gameState || gameOver) return;
+    if (gameState.gameStatus !== 'in_progress' || !gameState.currentPlayer?.isBot) return;
+
+    const timer = setTimeout(
+      () => {
+        if (!gameState.diceRolled) {
+          botRoll(gameState);
+        } else {
+          botMove(gameState);
+        }
+      },
+      gameState.diceRolled ? 800 : 1000
+    );
+
+    return () => clearTimeout(timer);
+  }, [gameState, mode, gameOver]);
+
+  const botRoll = (st) => {
     soundService.playDiceRoll();
     const dice = Math.floor(Math.random() * 6) + 1;
-    setGameState((prev) => {
-      const currentColor = prev.currentColor;
-      const tokens = prev.tokens[currentColor];
-      const legal = [];
-      tokens.forEach((step, idx) => {
-        if (step === -1 && dice === 6) {
-          legal.push({ tokenIndex: idx, fromStep: -1, toStep: 0, type: 'spawn' });
-        } else if (step >= 0 && step + dice <= 56) {
-          legal.push({ tokenIndex: idx, fromStep: step, toStep: step + dice });
-        }
-      });
-
-      if (legal.length === 0) {
-        // Pass
-        const nextTurnIdx = (prev.currentTurnIndex + 1) % prev.colorAssignments.length;
-        return {
-          ...prev,
-          currentDice: dice,
-          diceRolled: false,
-          currentTurnIndex: nextTurnIdx,
-          currentColor: prev.colorAssignments[nextTurnIdx],
-          currentPlayer: prev.players[nextTurnIdx],
-          lastAction: { message: `CyberBot 🤖 rolled a ${dice} (no legal moves)` },
-        };
+    const legal = [];
+    st.tokens[st.currentColor].forEach((step, idx) => {
+      if (step === -1 && dice === 6) {
+        legal.push({ tokenIndex: idx, fromStep: -1, toStep: 0, type: 'spawn' });
+      } else if (step >= 0 && step + dice <= 56) {
+        legal.push({ tokenIndex: idx, fromStep: step, toStep: step + dice });
       }
+    });
 
-      // Pick best move (spawn or furthest)
-      const chosenMove = legal.find((m) => m.type === 'spawn') || legal[0];
-
-      setTimeout(() => {
-        setGameState((st) => {
-          const bColor = st.currentColor;
-          const bTokens = { ...st.tokens };
-          bTokens[bColor] = [...bTokens[bColor]];
-          bTokens[bColor][chosenMove.tokenIndex] = chosenMove.toStep;
-
-          const bonus = dice === 6 || chosenMove.toStep === 56;
-          const nextTurn = bonus
-            ? st.currentTurnIndex
-            : (st.currentTurnIndex + 1) % st.colorAssignments.length;
-
-          return {
-            ...st,
-            tokens: bTokens,
-            diceRolled: false,
-            currentDice: null,
-            legalMoves: [],
-            currentTurnIndex: nextTurn,
-            currentColor: st.colorAssignments[nextTurn],
-            currentPlayer: st.players[nextTurn],
-            lastAction: { message: `CyberBot 🤖 moved token #${chosenMove.tokenIndex + 1}` },
-          };
-        });
-      }, 800);
-
-      return {
-        ...prev,
+    if (legal.length === 0) {
+      // Pass
+      const nextTurnIdx = (st.currentTurnIndex + 1) % st.colorAssignments.length;
+      setGameState({
+        ...st,
         currentDice: dice,
-        diceRolled: true,
-        legalMoves: legal,
-      };
+        diceRolled: false,
+        legalMoves: [],
+        currentTurnIndex: nextTurnIdx,
+        currentColor: st.colorAssignments[nextTurnIdx],
+        currentPlayer: st.players[nextTurnIdx],
+        lastAction: { message: `CyberBot 🤖 rolled a ${dice} (no legal moves)` },
+      });
+      return;
+    }
+
+    setGameState({
+      ...st,
+      currentDice: dice,
+      diceRolled: true,
+      legalMoves: legal,
+      lastAction: { message: `CyberBot 🤖 rolled a ${dice}!` },
+    });
+  };
+
+  const botMove = (st) => {
+    // Pick best move (spawn first, otherwise first legal)
+    const chosenMove = st.legalMoves.find((m) => m.type === 'spawn') || st.legalMoves[0];
+    if (!chosenMove) return;
+
+    soundService.playMove();
+    const bColor = st.currentColor;
+    const bTokens = { ...st.tokens };
+    bTokens[bColor] = [...bTokens[bColor]];
+    bTokens[bColor][chosenMove.tokenIndex] = chosenMove.toStep;
+
+    if (bTokens[bColor].every((s) => s === 56)) {
+      setGameState({ ...st, tokens: bTokens, diceRolled: false, legalMoves: [] });
+      soundService.playVictory();
+      setWinner(st.currentPlayer);
+      setGameOver(true);
+      return;
+    }
+
+    const bonus = st.currentDice === 6 || chosenMove.toStep === 56;
+    const nextTurn = bonus
+      ? st.currentTurnIndex
+      : (st.currentTurnIndex + 1) % st.colorAssignments.length;
+
+    setGameState({
+      ...st,
+      tokens: bTokens,
+      diceRolled: false,
+      currentDice: null,
+      legalMoves: [],
+      currentTurnIndex: nextTurn,
+      currentColor: st.colorAssignments[nextTurn],
+      currentPlayer: st.players[nextTurn],
+      lastAction: {
+        message: `CyberBot 🤖 moved token #${chosenMove.tokenIndex + 1}${
+          bonus ? ' 🎲 Extra roll!' : ''
+        }`,
+      },
     });
   };
 

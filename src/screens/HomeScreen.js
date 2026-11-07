@@ -1,602 +1,306 @@
-import React from 'react';
+// Home: game catalog grid with category filters. Tapping a game opens its detail page.
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
+import { GAMES, CATEGORIES, MODE_INFO } from '../games/catalog';
 
-export default function HomeScreen({
-  profile,
-  friends = [],
-  onOpenLudoLobby,
-  onOpenChessLobby,
-  onStartLocalLudo,
-  onStartBotLudo,
-  onStartLocalChess,
-  onStartBotChess,
-  onQuickMatch,
-  onOpenFriends,
-  onChallengeFriend,
-  onOpenDownload,
-}) {
+const MAX_WIDTH = 720;
+const PAD = 16;
+const GAP = 12;
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'GOOD MORNING';
+  if (h < 18) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+}
+
+export default function HomeScreen({ profile, friends = [], onSelectGame, onOpenFriends, onOpenDownload }) {
+  const [category, setCategory] = useState('all');
+  const { width } = useWindowDimensions();
+  // Measure the real grid width (window width can include scrollbars on web).
+  const [gridWidth, setGridWidth] = useState(Math.min(width, MAX_WIDTH) - PAD * 2 - 20);
+  const cols = gridWidth >= 540 ? 3 : 2;
+  const tileWidth = Math.floor((gridWidth - GAP * (cols - 1)) / cols) - 1;
+
   const onlineFriends = friends.filter((f) => f.online);
+  const games = category === 'all' ? GAMES : GAMES.filter((g) => g.category === category);
+  const featured = GAMES.find((g) => g.id === 'reaction');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Mobile Download Announcement Banner */}
-      <TouchableOpacity style={styles.mobileBanner} onPress={onOpenDownload}>
-        <View style={styles.mobileBannerLeft}>
-          <View style={styles.mobileBannerIcon}>
-            <Ionicons name="phone-portrait" size={20} color="#000" />
-          </View>
-          <View>
-            <Text style={styles.mobileBannerTitle}>📱 Play on Mobile (Android & iOS)</Text>
-            <Text style={styles.mobileBannerSub}>
-              Install to Home Screen or download native app in seconds
-            </Text>
-          </View>
-        </View>
-        <View style={styles.mobileBannerBtn}>
-          <Text style={styles.mobileBannerBtnText}>Get App →</Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Hero Welcome Banner */}
-      <View style={styles.heroBanner}>
-        <View style={styles.heroLeft}>
-          <Text style={styles.heroPre}>WELCOME BACK,</Text>
-          <Text style={styles.heroTitle}>{profile?.username || 'CHAMPION'}</Text>
+      {/* Hero */}
+      <View style={styles.hero}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.heroPre}>{greeting()},</Text>
+          <Text style={styles.heroTitle} numberOfLines={1}>
+            {profile?.username || 'Player'}
+          </Text>
           <Text style={styles.heroSub}>
-            Ready to challenge friends in real-time cross-platform battles?
+            {GAMES.length} games • {onlineFriends.length} friend{onlineFriends.length === 1 ? '' : 's'} online
           </Text>
         </View>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeEmoji}>⚔️</Text>
+        <View style={styles.heroAvatar}>
+          <Text style={styles.heroAvatarText}>{profile?.avatar || '🎮'}</Text>
         </View>
       </View>
 
-      {/* Online Friends Quick Bar */}
+      {/* Featured party game */}
+      {featured && (
+        <TouchableOpacity
+          style={styles.featured}
+          activeOpacity={0.85}
+          onPress={() => onSelectGame(featured.id)}
+        >
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={[styles.featuredPre, { color: featured.color }]}>⭐ FEATURED • PARTY PICK</Text>
+            <Text style={styles.featuredTitle}>
+              {featured.emoji} {featured.name}
+            </Text>
+            <Text style={styles.featuredSub}>
+              Put one phone on the table and find out who has the fastest reflexes in the room.
+            </Text>
+          </View>
+          <View style={[styles.featuredPlay, { backgroundColor: featured.color }]}>
+            <Ionicons name="play" size={22} color="#000" />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* Online friends */}
       {onlineFriends.length > 0 && (
         <View style={styles.friendsBar}>
-          <View style={styles.friendsBarHeader}>
-            <Text style={styles.friendsBarTitle}>Friends Online Now ({onlineFriends.length})</Text>
+          <View style={styles.rowBetween}>
+            <Text style={styles.friendsBarTitle}>🟢 Friends online ({onlineFriends.length})</Text>
             <TouchableOpacity onPress={onOpenFriends}>
-              <Text style={styles.viewAllText}>View All →</Text>
+              <Text style={styles.link}>Challenge →</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.friendsScroll}>
-            {onlineFriends.map((friend) => (
-              <View key={friend.id} style={styles.friendPill}>
-                <Text style={styles.friendPillAvatar}>{friend.avatar}</Text>
-                <View>
-                  <Text style={styles.friendPillName}>{friend.username}</Text>
-                  <View style={styles.friendPillStatus}>
-                    <View style={styles.pillGreenDot} />
-                    <Text style={styles.pillStatusText}>Online</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.pillPlayBtn}
-                  onPress={() => onChallengeFriend(friend.id, 'chess')}
-                >
-                  <Text style={styles.pillPlayText}>⚔️ Play</Text>
-                </TouchableOpacity>
-              </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {onlineFriends.map((f) => (
+              <TouchableOpacity key={f.id} style={styles.friendPill} onPress={onOpenFriends}>
+                <Text style={{ fontSize: 18 }}>{f.avatar}</Text>
+                <Text style={styles.friendName}>{f.username}</Text>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
       )}
 
-      {/* Quick Matchmaking Row */}
-      <View style={styles.quickMatchSection}>
-        <Text style={styles.sectionTitle}>⚡ INSTANT MATCHMAKING</Text>
-        <View style={styles.quickMatchGrid}>
-          <TouchableOpacity
-            style={[styles.quickCard, styles.quickLudo]}
-            onPress={() => onQuickMatch('ludo')}
-          >
-            <Text style={styles.quickEmoji}>🎲</Text>
-            <View>
-              <Text style={styles.quickTitle}>Quick Ludo</Text>
-              <Text style={styles.quickDesc}>Find player in seconds</Text>
-            </View>
-            <Ionicons name="flash" size={18} color="#EF4444" style={styles.quickIcon} />
-          </TouchableOpacity>
+      {/* Categories */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {CATEGORIES.map((c) => {
+          const active = c.id === category;
+          return (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => setCategory(c.id)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{c.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
+      {/* Game grid */}
+      <View style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
+        {games.map((g) => (
           <TouchableOpacity
-            style={[styles.quickCard, styles.quickChess]}
-            onPress={() => onQuickMatch('chess')}
+            key={g.id}
+            activeOpacity={0.85}
+            onPress={() => onSelectGame(g.id)}
+            style={[styles.tile, { width: tileWidth }]}
           >
-            <Text style={styles.quickEmoji}>♟️</Text>
-            <View>
-              <Text style={styles.quickTitle}>Quick Chess</Text>
-              <Text style={styles.quickDesc}>FIDE rules 10m Blitz</Text>
+            <View style={[styles.tileArt, { borderBottomColor: g.color }]}>
+              <Text style={styles.tileEmoji}>{g.emoji}</Text>
+              {g.badge ? (
+                <View style={[styles.badge, { backgroundColor: g.color }]}>
+                  <Text style={styles.badgeText}>{g.badge}</Text>
+                </View>
+              ) : null}
             </View>
-            <Ionicons name="flash" size={18} color="#06B6D4" style={styles.quickIcon} />
+            <View style={styles.tileBody}>
+              <Text style={styles.tileName} numberOfLines={1}>
+                {g.name}
+              </Text>
+              <Text style={styles.tileTag} numberOfLines={2}>
+                {g.tagline}
+              </Text>
+              <View style={styles.modeIcons}>
+                {g.modes.map((m) => (
+                  <Ionicons key={m} name={MODE_INFO[m].icon} size={13} color={COLORS.textSecondary} />
+                ))}
+              </View>
+            </View>
           </TouchableOpacity>
-        </View>
+        ))}
       </View>
 
-      {/* Main Game Showcase */}
-      <Text style={styles.sectionTitle}>🎮 SELECT GAME ARENA</Text>
-
-      {/* GAME 1: LUDO ROYALE */}
-      <View style={[styles.gameCard, styles.ludoCard]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <View style={[styles.gameIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
-              <Text style={styles.gameIconEmoji}>🎲</Text>
-            </View>
-            <View>
-              <Text style={styles.cardGameName}>LUDO ROYALE</Text>
-              <Text style={styles.cardGameTag}>Multiplayer Board Game • 2-4 Players</Text>
-            </View>
+      {/* Legend */}
+      <View style={styles.legend}>
+        {Object.entries(MODE_INFO).map(([k, m]) => (
+          <View key={k} style={styles.legendItem}>
+            <Ionicons name={m.icon} size={12} color={COLORS.textMuted} />
+            <Text style={styles.legendText}>{k === 'online' ? 'Online' : k === 'bot' ? 'Vs AI' : k === 'local' ? 'Same device' : 'Solo'}</Text>
           </View>
-          <View style={[styles.hotBadge, { backgroundColor: COLORS.ludoRed }]}>
-            <Text style={styles.hotBadgeText}>POPULAR</Text>
-          </View>
-        </View>
-
-        <Text style={styles.cardDescription}>
-          Roll 6 to launch tokens, cut opponents back to yard, conquer safe stars, and
-          race all 4 tokens into the center home!
-        </Text>
-
-        {/* Action Modes */}
-        <View style={styles.cardActions}>
-          <TouchableOpacity
-            style={[styles.modeButton, styles.modeOnlineLudo]}
-            onPress={onOpenLudoLobby}
-          >
-            <Ionicons name="people" size={18} color="#FFF" />
-            <Text style={styles.modeButtonText}>Play with Friends (Online)</Text>
-          </TouchableOpacity>
-
-          <View style={styles.subModesRow}>
-            <TouchableOpacity style={styles.subModeBtn} onPress={onStartBotLudo}>
-              <Ionicons name="hardware-chip-outline" size={16} color={COLORS.secondary} />
-              <Text style={styles.subModeText}>Vs AI Bot</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.subModeBtn} onPress={onStartLocalLudo}>
-              <Ionicons name="phone-portrait-outline" size={16} color={COLORS.accent} />
-              <Text style={styles.subModeText}>Pass & Play</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        ))}
       </View>
 
-      {/* GAME 2: CHESS MASTERS */}
-      <View style={[styles.gameCard, styles.chessCard]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <View style={[styles.gameIconBox, { backgroundColor: 'rgba(6, 182, 212, 0.2)' }]}>
-              <Text style={styles.gameIconEmoji}>♟️</Text>
-            </View>
-            <View>
-              <Text style={styles.cardGameName}>CHESS MASTERS</Text>
-              <Text style={styles.cardGameTag}>Grandmaster FIDE Rules • 1v1 Ranked</Text>
-            </View>
-          </View>
-          <View style={[styles.hotBadge, { backgroundColor: COLORS.primary }]}>
-            <Text style={[styles.hotBadgeText, { color: '#000' }]}>CLASSIC</Text>
-          </View>
+      {/* Invite + Download */}
+      <TouchableOpacity style={styles.rowCard} onPress={onOpenFriends}>
+        <View style={[styles.rowIcon, { backgroundColor: '#262626' }]}>
+          <Ionicons name="person-add" size={20} color={COLORS.primary} />
         </View>
-
-        <Text style={styles.cardDescription}>
-          Tactical warfare! En passant, castling, pawn promotions, and deep strategic checkmates.
-          Complete with chess clock timers.
-        </Text>
-
-        {/* Action Modes */}
-        <View style={styles.cardActions}>
-          <TouchableOpacity
-            style={[styles.modeButton, styles.modeOnlineChess]}
-            onPress={onOpenChessLobby}
-          >
-            <Ionicons name="people" size={18} color="#000" />
-            <Text style={[styles.modeButtonText, { color: '#000' }]}>
-              Play with Friends (Online)
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.subModesRow}>
-            <TouchableOpacity style={styles.subModeBtn} onPress={onStartBotChess}>
-              <Ionicons name="hardware-chip-outline" size={16} color={COLORS.secondary} />
-              <Text style={styles.subModeText}>Vs AI Bot</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.subModeBtn} onPress={onStartLocalChess}>
-              <Ionicons name="phone-portrait-outline" size={16} color={COLORS.accent} />
-              <Text style={styles.subModeText}>Pass & Play</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Add & invite friends</Text>
+          <Text style={styles.rowSub}>Your ID: {profile?.username}</Text>
         </View>
-      </View>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+      </TouchableOpacity>
 
-      {/* Social / Add Friends Promo Card */}
-      <TouchableOpacity style={styles.socialCard} onPress={onOpenFriends}>
-        <View style={styles.socialLeft}>
-          <View style={styles.socialIconBox}>
-            <Ionicons name="person-add" size={24} color={COLORS.primary} />
-          </View>
-          <View>
-            <Text style={styles.socialTitle}>Add & Invite Friends</Text>
-            <Text style={styles.socialSub}>
-              Share your Friend ID: {profile?.username}
-            </Text>
-          </View>
+      <TouchableOpacity style={styles.rowCard} onPress={onOpenDownload}>
+        <View style={[styles.rowIcon, { backgroundColor: '#262626' }]}>
+          <Ionicons name="phone-portrait" size={20} color={COLORS.secondary} />
         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Get the mobile app</Text>
+          <Text style={styles.rowSub}>Android & iOS — install in seconds</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   content: {
-    padding: 16,
+    padding: PAD,
     gap: 16,
-    maxWidth: 720,
+    maxWidth: MAX_WIDTH,
     width: '100%',
     alignSelf: 'center',
-    paddingBottom: 40,
+    paddingBottom: 48,
   },
-  mobileBanner: {
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    borderRadius: 18,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  mobileBannerLeft: {
+  hero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    flex: 1,
-  },
-  mobileBannerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mobileBannerTitle: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  mobileBannerSub: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  mobileBannerBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  mobileBannerBtnText: {
-    color: '#000',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  heroBanner: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 12,
+    padding: 18,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  heroLeft: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  heroPre: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  heroTitle: {
-    color: COLORS.text,
-    fontSize: 22,
-    fontWeight: '900',
-    marginVertical: 2,
-  },
-  heroSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  heroBadge: {
+  heroPre: { color: COLORS.primary, fontSize: 11, fontWeight: '900', letterSpacing: 1.5 },
+  heroTitle: { color: COLORS.text, fontSize: 22, fontWeight: '900', marginVertical: 2 },
+  heroSub: { color: COLORS.textSecondary, fontSize: 12 },
+  heroAvatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
+    borderColor: '#3B3B3B',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroBadgeEmoji: {
-    fontSize: 28,
+  heroAvatarText: { fontSize: 28 },
+  featured: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    padding: 16,
   },
+  featuredPre: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  featuredTitle: { color: COLORS.text, fontSize: 19, fontWeight: '900' },
+  featuredSub: { color: COLORS.textLight, fontSize: 12, lineHeight: 17 },
+  featuredPlay: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   friendsBar: {
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 12,
+    gap: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  friendsBarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  friendsBarTitle: {
-    color: COLORS.textLight,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  viewAllText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  friendsScroll: {
-    flexDirection: 'row',
-  },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  friendsBarTitle: { color: COLORS.textLight, fontSize: 12, fontWeight: '700' },
+  link: { color: COLORS.primary, fontSize: 12, fontWeight: '800' },
   friendPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginRight: 10,
-    gap: 8,
-  },
-  friendPillAvatar: {
-    fontSize: 20,
-  },
-  friendPillName: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  friendPillStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pillGreenDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.success,
-  },
-  pillStatusText: {
-    color: COLORS.textSecondary,
-    fontSize: 10,
-  },
-  pillPlayBtn: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  pillPlayText: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  quickMatchSection: {
-    gap: 8,
-  },
-  sectionTitle: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  quickMatchGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    position: 'relative',
-  },
-  quickLudo: {
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-  },
-  quickChess: {
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-  },
-  quickEmoji: {
-    fontSize: 24,
-  },
-  quickTitle: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  quickDesc: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-  },
-  quickIcon: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  gameCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 20,
-    gap: 12,
-  },
-  ludoCard: {
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  chessCard: {
-    borderColor: 'rgba(6, 182, 212, 0.3)',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  gameIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gameIconEmoji: {
-    fontSize: 24,
-  },
-  cardGameName: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  cardGameTag: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  hotBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  hotBadgeText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  cardDescription: {
-    color: COLORS.textLight,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  cardActions: {
-    gap: 8,
-    marginTop: 4,
-  },
-  modeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  modeOnlineLudo: {
-    backgroundColor: COLORS.ludoRed,
-  },
-  modeOnlineChess: {
-    backgroundColor: COLORS.primary,
-  },
-  modeButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  subModesRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  subModeBtn: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: 10,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-  },
-  subModeText: {
-    color: COLORS.textLight,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  socialCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  socialLeft: {
+  friendName: { color: COLORS.text, fontSize: 12, fontWeight: '700' },
+  chips: { gap: 8 },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipText: { color: COLORS.textLight, fontWeight: '800', fontSize: 13 },
+  chipTextActive: { color: '#000' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
+  tile: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  tileArt: {
+    height: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surfaceLight,
+    borderBottomWidth: 3,
+  },
+  tileEmoji: { fontSize: 46 },
+  badge: { position: 'absolute', top: 8, right: 8, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  badgeText: { color: '#000', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  tileBody: { padding: 12, gap: 3 },
+  tileName: { color: COLORS.text, fontSize: 15, fontWeight: '900' },
+  tileTag: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 15, minHeight: 30 },
+  modeIcons: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendText: { color: COLORS.textMuted, fontSize: 11 },
+  rowCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  socialIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialTitle: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  socialSub: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 2,
-  },
+  rowIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { color: COLORS.text, fontSize: 14, fontWeight: '800' },
+  rowSub: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
 });

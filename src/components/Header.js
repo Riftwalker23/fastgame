@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
 
@@ -14,12 +21,15 @@ export default function Header({
   isMuted,
   onToggleMute,
 }) {
+  // On phones, collapse labels so every button fits on screen.
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
   return (
     <View style={styles.header}>
       {/* Brand */}
       <View style={styles.brandRow}>
         <View style={styles.logoBadge}>
-          <Ionicons name="game-controller" size={20} color="#06B6D4" />
+          <Ionicons name="game-controller" size={20} color="#E0A240" />
         </View>
         <View>
           <Text style={styles.brandTitle}>
@@ -42,10 +52,12 @@ export default function Header({
       {/* Action Buttons */}
       <View style={styles.actionRow}>
         {/* Download on Mobile Button */}
-        <TouchableOpacity style={styles.downloadHeaderBtn} onPress={onOpenDownload}>
-          <Ionicons name="phone-portrait" size={15} color="#000" />
-          <Text style={styles.downloadHeaderText}>Mobile</Text>
-        </TouchableOpacity>
+        {!compact && (
+          <TouchableOpacity style={styles.downloadHeaderBtn} onPress={onOpenDownload}>
+            <Ionicons name="phone-portrait" size={15} color="#000" />
+            <Text style={styles.downloadHeaderText}>Mobile</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Mute Button */}
         <TouchableOpacity style={styles.iconButton} onPress={onToggleMute}>
@@ -74,11 +86,13 @@ export default function Header({
         {/* Profile Button */}
         <TouchableOpacity style={styles.profileBtn} onPress={onOpenProfile}>
           <Text style={styles.avatarText}>{profile?.avatar || '🎮'}</Text>
-          <View style={styles.profileInfo}>
-            <Text style={styles.usernameText} numberOfLines={1}>
-              {profile?.username || 'Player'}
-            </Text>
-          </View>
+          {!compact && (
+            <View style={styles.profileInfo}>
+              <Text style={styles.usernameText} numberOfLines={1}>
+                {profile?.username || 'Player'}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -106,9 +120,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    backgroundColor: '#262626',
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
+    borderColor: '#3B3B3B',
     alignItems: 'center',
     justifyContent: 'center',
   },
